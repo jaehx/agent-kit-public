@@ -12,7 +12,7 @@
 ## 설치 (Claude Code)
 
 ```
-/plugin marketplace add morest432/agent-kit-public
+/plugin marketplace add jaehx/agent-kit-public
 /plugin install prompt-polish@agent-kit
 /plugin install project-handoff@agent-kit
 ```
