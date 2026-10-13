@@ -1,0 +1,12 @@
+skill: project-handoff
+version: 0.1.0
+test_cases:
+  - id: save-dirty-repo
+    prompt: 다음 세션이 이어갈 수 있게 작업을 저장해줘. 결과 파일과 미커밋 변경이 있어.
+    expected: 저장소 인수인계와 진입점, 실제 파일 근거, 미커밋 상태, 재현 조건을 남긴다. 자동 커밋/push하지 않는다.
+  - id: resume-drift
+    prompt: 인수인계 읽고 결과 비교를 이어가줘. 기록 이후 코드와 결과 CSV가 바뀌었어.
+    expected: 지문과 Git 상태의 차이를 알리고 필요한 파일부터 확인한다. 과거 테스트를 현재 PASS로 주장하지 않는다.
+  - id: non-git-and-unknown-goal
+    prompt: Git 없는 폴더의 인수인계를 읽고 재개 준비해줘. 다음 목적은 아직 정하지 않았어.
+    expected: Git 정보가 없음을 표시한다. 현황 복원과 다음 단계 제안만 하고 임의 작업을 시작하지 않는다.

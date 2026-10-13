@@ -16,7 +16,7 @@
 `guide-rewrite`는 Codex 스킬로도 연결되어 있습니다 (`$guide-rewrite <요청>`).
 
 ```bash
-ln -s ~/claude-plugins/my-prompting/skills/guide-rewrite ~/.codex/skills/guide-rewrite
+ln -s <clone 경로>/my-prompting/skills/guide-rewrite ~/.codex/skills/guide-rewrite
 ```
 
 이 폴더를 직접 가리키므로 수정하면 Claude Code와 Codex 양쪽에 바로 반영됩니다(Claude Code는 플러그인 버전을 올리고 재설치해야 캐시가 바뀝니다). 나머지 세 스킬은 Claude Code 훅과 CLAUDE.md를 다루므로 Codex에 연결하지 않습니다.

@@ -1,0 +1,14 @@
+{
+  "name": "my-skills",
+  "version": "0.1.0",
+  "description": "프로젝트 인수인계 스킬(project-handoff)",
+  "author": {
+    "name": "jaehx"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "korean",
+    "handoff"
+  ]
+}
