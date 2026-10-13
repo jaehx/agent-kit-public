@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+# oh-my-fable hook. Two events, one script:
+#   SessionStart  · the always-on working rules for the main session (plus a one-line status for the user)
+#   SubagentStart · a short version of the rules for subagents spawned with the Agent tool
+#   --status      · print what is in effect (used by /guide-status); writes nothing
+#
+# Config (optional). Global: $CLAUDE_CONFIG_DIR/oh-my-fable.json (default ~/.claude)  Project: $CLAUDE_PROJECT_DIR/.claude/oh-my-fable.json
+#   {"enabled": true, "mode": "auto" | "interactive" | "unattended", "delivery": "hook" | "rules-file" | "claude-md"}
+# mode "auto" (default): unattended when Claude Code was started through the SDK or headless mode
+# (CLAUDE_CODE_ENTRYPOINT is sdk-cli, sdk-ts, or sdk-py; `claude -p`, Agent SDK apps, and agent harnesses set
+# this), interactive otherwise (terminal, IDE). The SessionStart hook input carries no permission mode and not always the model,
+# so the entrypoint is the only per-session signal.
+# Merge rule: a project file may only turn the plugin OFF ("enabled": false). "mode" and "delivery" are read
+# from the global file only, so a cloned repository cannot switch an agent to unattended mode.
+# Defaults: enabled, auto, hook.
+#
+# Where the base rules come from, in this order:
+#   1. a CLAUDE.md section between oh-my-fable:start / oh-my-fable:end (static, user-managed): hook stays silent
+#   2. rules/oh-my-fable.md written by /guide-setup (marker oh-my-fable:rules vN): Claude Code auto-loads it for the
+#      main session, regular subagents and teams; the hook adds only the unattended paragraphs per session and
+#      warns once per session when the plugin ships a newer version of that file
+#   3. any other rules/oh-my-fable.md (user-managed): hook stays silent
+#   4. nothing else: the hook carries everything (hook only)
+# Subagents: Explore and Plan never load CLAUDE.md or rules files, so they get the short rules from this hook
+# whenever the plugin is enabled. Other subagents get the short rules only in hook-only delivery (otherwise the
+# rules file or CLAUDE.md section already reaches them).
+#
+# Output: plain text when run by hand (no hook JSON on stdin); JSON with additionalContext / systemMessage when
+# Claude Code runs it. No python, jq, or other runtime is needed (macOS, Linux, Windows Git Bash).
+set -u
+export LC_ALL=C
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJ="${CLAUDE_PROJECT_DIR:-.}"
+CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"   # Claude Code moves settings, rules and plugins with CLAUDE_CONFIG_DIR
+GLOBAL="$CFG/oh-my-fable.json"
+LOCAL="$PROJ/.claude/oh-my-fable.json"
+STATUS=false; [ "${1:-}" = "--status" ] && STATUS=true
+
+# hook input (JSON on stdin); empty when run by hand or with --status
+IN=""
+if [ "$STATUS" = false ] && [ ! -t 0 ]; then IN="$(cat 2>/dev/null || true)"; fi
+jget() { printf '%s' "$IN" | tr -d '[:space:]' | grep -o "\"$1\":\"[^\"]*\"" | head -1 | sed 's/^[^:]*://; s/"//g'; }
+EVENT="$(jget hook_event_name)"; SOURCE="$(jget source)"; AGENT="$(jget agent_type)"
+
+# my-prompting: 모델별 규칙 층. 모델 이름을 보고 hooks/models/ 안의 파일 하나를 고른다.
+# 모르는 모델(Haiku, Opus 4.x 등)이면 빈 값 → 공통 규칙만 적용된다.
+# ponytail: 마지막 모델을 전역 파일 하나에 기억한다. 여러 세션을 동시에 쓰면 서로 덮어쓸 수 있음 → 필요해지면 session_id별 파일로.
+LAST="$CFG/my-prompting.last-model"
+model_file() { case "$1" in *fable*|*mythos*) echo fable-5-1;; *opus-5-5*) echo opus-5-5;; *opus-5*) echo opus-5;; *sonnet-5*) echo sonnet-5;; esac; }
+
+# read a JSON string/bool value for key $2 from file $1, ignoring whitespace; empty if absent
+val() { [ -f "$1" ] || return 0; tr -d '[:space:]' < "$1" | grep -o "\"$2\":\"\{0,1\}[A-Za-z-]*" | head -1 | sed 's/.*://; s/"//g'; }
+# JSON string escaping for the text files (backslash, quote, tab, newline)
+jesc() { sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/	/\\t/g' | awk 'NR>1{printf "\\n"} {printf "%s", $0}'; }
+VERSION="$(grep -o '"version": *"[^"]*"' "$HERE/../.claude-plugin/plugin.json" 2>/dev/null | head -1 | sed 's/.*: *"//; s/"//')"
+
+ENABLED=true; MODE=auto; DELIVERY=hook
+[ "$(val "$GLOBAL" enabled)" = "false" ] && ENABLED=false
+[ "$(val "$LOCAL" enabled)" = "false" ] && ENABLED=false
+m="$(val "$GLOBAL" mode)"; case "$m" in interactive|unattended) MODE="$m";; esac
+AUTO=""
+if [ "$MODE" = auto ]; then
+  case "${CLAUDE_CODE_ENTRYPOINT:-}" in sdk-cli|sdk-ts|sdk-py) MODE=unattended;; *) MODE=interactive;; esac
+  AUTO=" (auto)"
+fi
+d="$(val "$GLOBAL" delivery)"; [ -n "$d" ] && DELIVERY="$d"
+
+# Where do the base rules come from? STATE: disabled | claude-md | rules-file | user-rules | hook-only
+STATE=hook-only; BASE=""; RULES_V=""; PLUGIN_V="$(grep -o 'oh-my-fable:rules v[0-9]*' "$HERE/rules-file.md" | head -1 | sed 's/.*v//')"
+for f in "$CFG/CLAUDE.md" "$PROJ/CLAUDE.md" "$PROJ/.claude/CLAUDE.md"; do
+  [ -f "$f" ] && grep -q 'oh-my-fable:start' "$f" && { STATE=claude-md; BASE="$f"; break; }
+done
+if [ "$STATE" = hook-only ]; then
+  for f in "$PROJ/.claude/rules/oh-my-fable.md" "$CFG/rules/oh-my-fable.md"; do
+    [ -f "$f" ] || continue
+    BASE="$f"
+    RULES_V="$(grep -o 'oh-my-fable:rules v[0-9]*' "$f" | head -1 | sed 's/.*v//')"
+    if [ -n "$RULES_V" ]; then STATE=rules-file; else STATE=user-rules; fi
+    break
+  done
+fi
+[ "$STATE" = hook-only ] && [ "$DELIVERY" = claude-md ] && STATE=claude-md   # config says CLAUDE.md, section not found yet
+[ "$ENABLED" = true ] || STATE=disabled
+
+# effort shown in the status line. Claude Code sets CLAUDE_EFFORT (and the effort input field) only inside tool-use
+# contexts, never for SessionStart (hooks doc, common input fields; measured on 2.1.280), so a CLAUDE_EFFORT seen at
+# SessionStart was inherited from a parent session's Bash tool and describes that session: ignored. With --status (run
+# by the Bash tool inside the session) CLAUDE_EFFORT is the live level and wins. Otherwise: the env override, then the
+# user settings file, where modelSettings.<canonical model>.effortLevel beats the top-level effortLevel; Opus 5.5
+# ignores a user-scope top-level effortLevel and starts at its own default, medium (model-config doc).
+model_default() { case "$1" in claude-opus-5-5*) echo medium;; claude-opus-4-7*) echo xhigh;; "") ;; *) echo high;; esac; }
+effort_val() { grep -o '"effortLevel":"[a-z]*"' | head -1 | sed 's/.*://; s/"//g'; }
+EFFORT=""; SRC=""
+if [ "$STATUS" = true ] || [ -z "$EVENT" ] || { [ "$EVENT" = SessionStart ] && [ "$SOURCE" = startup ]; }; then   # only the startup status line and --status show it
+  MODEL="$(jget model | sed 's/\[1m\]$//; s/-[0-9]\{8\}$//')"   # canonical id: no [1m], no date suffix
+  if [ "$STATUS" = true ] && [ -n "${CLAUDE_EFFORT:-}" ]; then EFFORT="$CLAUDE_EFFORT"; SRC=live
+  elif [ -n "${CLAUDE_CODE_EFFORT_LEVEL:-}" ]; then EFFORT="$CLAUDE_CODE_EFFORT_LEVEL"; SRC=env
+  elif [ -n "$MODEL" ]; then
+    SJ=""; [ -f "$CFG/settings.json" ] && SJ="$(tr -d '[:space:]' < "$CFG/settings.json")"
+    PER_MODEL="$(printf '%s' "$SJ" | grep -o "\"$MODEL\":{[^}]*}" | effort_val)"
+    TOP=""   # the user-scope top-level effortLevel, read only when needed; Opus 5.5 ignores it
+    case "$MODEL" in claude-opus-5-5*) ;; *) [ -n "$PER_MODEL" ] || TOP="$(printf '%s' "$SJ" | sed 's/"[^"]*":{[^{}]*"effortLevel":"[a-z]*"[^{}]*}//g' | effort_val)";; esac
+    if [ -n "$PER_MODEL" ]; then EFFORT="$PER_MODEL"; SRC=saved
+    elif [ -n "$TOP" ]; then EFFORT="$TOP"; SRC=settings
+    else EFFORT="$(model_default "$MODEL")"; SRC="model default"; fi
+  fi
+fi
+EFFORT_SHOWN="${EFFORT:+ · effort $EFFORT ($SRC)}"; [ -n "$EFFORT" ] || EFFORT="(not known at session start; /effort shows it)"
+
+case "$STATE" in
+  claude-md)  HOW="CLAUDE.md section${BASE:+ ($BASE)}; hook silent";;
+  rules-file) HOW="rules file + hook ($BASE, v$RULES_V)";;
+  user-rules) HOW="user-managed rules file ($BASE); hook silent";;
+  hook-only)  HOW="hook only";;
+  disabled)   HOW="disabled by config";;
+esac
+STATUS_LINE="my-prompting ${VERSION:-?} · mode $MODE$AUTO · rules: $HOW$EFFORT_SHOWN"
+UPGRADE=""
+[ "$STATE" = rules-file ] && [ -n "$PLUGIN_V" ] && [ "$RULES_V" != "$PLUGIN_V" ] && \
+  UPGRADE="oh-my-fable: your rules file is v$RULES_V, the plugin ships v$PLUGIN_V. Run /guide-setup refresh to update it."
+
+if [ "$STATUS" = true ]; then
+  case "$STATE" in
+    disabled|user-rules) SUB="nothing from the hook";;
+    hook-only) SUB="short rules to every subagent (SubagentStart hook)";;
+    *) SUB="base file reaches regular subagents; Explore and Plan get the short rules from the hook";;
+  esac
+  printf 'plugin_version: %s\nconfig_dir: %s\nproject_dir: %s\nentrypoint: %s\nenabled: %s\nmode: %s%s\ndelivery_config: %s\nrules_source: %s\nbase_file: %s\nrules_file_version: %s\nplugin_rules_version: %s\neffort: %s\neffort_source: %s\nsubagents: %s\nnotice: %s\n' \
+    "${VERSION:-?}" "$CFG" "$PROJ" "${CLAUDE_CODE_ENTRYPOINT:-(none, interactive)}" "$ENABLED" "$MODE" "$AUTO" "$DELIVERY" "$STATE" "${BASE:-(none)}" "${RULES_V:-(n/a)}" "${PLUGIN_V:-?}" "$EFFORT" "${SRC:-(n/a)}" "$SUB" "${UPGRADE:-(none)}"
+  exit 0
+fi
+
+[ "$STATE" = disabled ] && exit 0
+
+# ---------- PostModelSwitch: 세션 도중 모델이 바뀌면 새 모델의 규칙으로 갈아끼운다 ----------
+# 출력은 일반 텍스트(exit 0)로 보낸다. Claude Code가 다음 요청에 컨텍스트로 붙여 준다.
+if [ "$EVENT" = PostModelSwitch ]; then
+  TO="$(jget to_model)"; [ -n "$TO" ] && printf '%s\n' "$TO" > "$LAST"
+  F="$(model_file "$TO")"
+  printf 'The session model changed to %s. Model-specific rules given earlier for another model no longer apply' "${TO:-an unknown model}"
+  if [ -n "$F" ]; then printf '; use these instead.\n\n'; cat "$HERE/models/$F.md"; else printf '; only the base working rules remain.\n'; fi
+  exit 0
+fi
+
+# ---------- SubagentStart ----------
+if [ "$EVENT" = SubagentStart ]; then
+  case "$STATE" in
+    user-rules) exit 0;;
+    hook-only) ;;
+    *) case "$AGENT" in Explore|Plan) ;; *) exit 0;; esac;;
+  esac
+  printf '{"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":"%s"}}\n' "$(jesc < "$HERE/subagent.md")"
+  exit 0
+fi
+
+# ---------- SessionStart (or run by hand) ----------
+CTX=""
+case "$STATE" in
+  claude-md|user-rules) ;;
+  rules-file)
+    [ "$MODE" = unattended ] && CTX="$(printf '# Working rules (oh-my-fable), unattended session\n\n%s\n' "$(cat "$HERE/autonomy-unattended.md")")";;
+  hook-only)
+    BODY="$(cat "$HERE/always-on.md")"
+    if [ "$MODE" = unattended ]; then
+      HEAD="$(printf '%s\n' "$BODY" | sed -n '1p')"
+      REST="$(printf '%s\n' "$BODY" | sed '1d')"
+      BODY="$HEAD"$'\n\n'"$(cat "$HERE/autonomy-unattended.md")"$'\n'"$REST"
+    fi
+    CTX="$BODY";;
+esac
+
+# my-prompting: SessionStart 입력의 model로 모델별 규칙을 덧붙인다.
+# /clear 직후 등 model이 빠지는 경우가 있어서(hooks 문서), 그때는 마지막으로 본 모델을 쓴다.
+if [ "$EVENT" = SessionStart ]; then
+  CUR="$(jget model | sed 's/\[1m\]$//; s/-[0-9]\{8\}$//')"
+  if [ -n "$CUR" ]; then printf '%s\n' "$CUR" > "$LAST"; else CUR="$(cat "$LAST" 2>/dev/null || true)"; fi
+  MF="$(model_file "$CUR")"
+  if [ -n "$MF" ]; then
+    NL=$'\n\n'
+    CTX="${CTX:+$CTX$NL}$(cat "$HERE/models/$MF.md")"
+    STATUS_LINE="$STATUS_LINE · model rules: $MF"
+  fi
+fi
+
+if [ -z "$EVENT" ]; then
+  # run by hand (/guide-setup verification, curious users): plain text, status last
+  [ -n "$CTX" ] && printf '%s\n\n' "$CTX"
+  printf '(%s)\n' "$STATUS_LINE"
+  [ -n "$UPGRADE" ] && printf '%s\n' "$UPGRADE"
+  exit 0
+fi
+
+# run by Claude Code: rules go to Claude's context, the status line goes to the user (new sessions only)
+MSG=""
+[ "$SOURCE" = startup ] && MSG="$STATUS_LINE"
+[ -n "$UPGRADE" ] && MSG="${MSG:+$MSG. }$UPGRADE"
+[ -z "$CTX" ] && [ -z "$MSG" ] && exit 0
+OUT="{"
+[ -n "$CTX" ] && OUT="$OUT\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"$(printf '%s' "$CTX" | jesc)\"}"
+[ -n "$CTX" ] && [ -n "$MSG" ] && OUT="$OUT,"
+[ -n "$MSG" ] && OUT="$OUT\"systemMessage\":\"$(printf '%s' "$MSG" | jesc)\""
+printf '%s}\n' "$OUT"
+exit 0

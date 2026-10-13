@@ -1,0 +1,16 @@
+{
+  "name": "my-prompting",
+  "version": "2.2.0-my.2",
+  "description": "Personal fork of oh-my-fable 2.2.0 (Junhan2, MIT). Same always-on working rules and skills, plus a model-specific layer: the hook detects the session model (SessionStart model field, PostModelSwitch) and adds the matching rules from Anthropic's Fable 5.1, Opus 5.5, Opus 5, or Sonnet 5 prompting guide. Skills are named guide-* (guide-rewrite, guide-audit, guide-setup, guide-status); guide-rewrite also follows OpenAI's GPT-6 and Codex guides when run in Codex.",
+  "author": {
+    "name": "jaehx"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude",
+    "prompting",
+    "claude-code",
+    "fork-of-oh-my-fable",
+    "openai"
+  ]
+}
