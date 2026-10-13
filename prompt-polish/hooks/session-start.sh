@@ -42,10 +42,10 @@ if [ "$STATUS" = false ] && [ ! -t 0 ]; then IN="$(cat 2>/dev/null || true)"; fi
 jget() { printf '%s' "$IN" | tr -d '[:space:]' | grep -o "\"$1\":\"[^\"]*\"" | head -1 | sed 's/^[^:]*://; s/"//g'; }
 EVENT="$(jget hook_event_name)"; SOURCE="$(jget source)"; AGENT="$(jget agent_type)"
 
-# my-prompting: 모델별 규칙 층. 모델 이름을 보고 hooks/models/ 안의 파일 하나를 고른다.
+# prompt-polish: 모델별 규칙 층. 모델 이름을 보고 hooks/models/ 안의 파일 하나를 고른다.
 # 모르는 모델(Haiku, Opus 4.x 등)이면 빈 값 → 공통 규칙만 적용된다.
 # ponytail: 마지막 모델을 전역 파일 하나에 기억한다. 여러 세션을 동시에 쓰면 서로 덮어쓸 수 있음 → 필요해지면 session_id별 파일로.
-LAST="$CFG/my-prompting.last-model"
+LAST="$CFG/prompt-polish.last-model"
 model_file() { case "$1" in *fable*|*mythos*) echo fable-5-1;; *opus-5-5*) echo opus-5-5;; *opus-5*) echo opus-5;; *sonnet-5*) echo sonnet-5;; esac; }
 
 # read a JSON string/bool value for key $2 from file $1, ignoring whitespace; empty if absent
@@ -114,7 +114,7 @@ case "$STATE" in
   hook-only)  HOW="hook only";;
   disabled)   HOW="disabled by config";;
 esac
-STATUS_LINE="my-prompting ${VERSION:-?} · mode $MODE$AUTO · rules: $HOW$EFFORT_SHOWN"
+STATUS_LINE="prompt-polish ${VERSION:-?} · mode $MODE$AUTO · rules: $HOW$EFFORT_SHOWN"
 UPGRADE=""
 [ "$STATE" = rules-file ] && [ -n "$PLUGIN_V" ] && [ "$RULES_V" != "$PLUGIN_V" ] && \
   UPGRADE="oh-my-fable: your rules file is v$RULES_V, the plugin ships v$PLUGIN_V. Run /guide-setup refresh to update it."
@@ -169,7 +169,7 @@ case "$STATE" in
     CTX="$BODY";;
 esac
 
-# my-prompting: SessionStart 입력의 model로 모델별 규칙을 덧붙인다.
+# prompt-polish: SessionStart 입력의 model로 모델별 규칙을 덧붙인다.
 # /clear 직후 등 model이 빠지는 경우가 있어서(hooks 문서), 그때는 마지막으로 본 모델을 쓴다.
 if [ "$EVENT" = SessionStart ]; then
   CUR="$(jget model | sed 's/\[1m\]$//; s/-[0-9]\{8\}$//')"

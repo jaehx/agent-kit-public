@@ -1,18 +1,18 @@
 {
-  "name": "my-plugins",
+  "name": "agent-kit",
   "owner": {
     "name": "jaehx"
   },
   "description": "Personal Claude Code plugins",
   "plugins": [
     {
-      "name": "my-prompting",
-      "source": "./my-prompting",
+      "name": "prompt-polish",
+      "source": "./prompt-polish",
       "description": "oh-my-fable fork with per-model prompting rules (Fable 5.1, Opus 5.5, Opus 5, Sonnet 5) and OpenAI GPT-6/Codex blocks for guide-rewrite"
     },
     {
-      "name": "my-skills",
-      "source": "./my-skills",
+      "name": "project-handoff",
+      "source": "./project-handoff",
       "description": "프로젝트 인수인계 스킬(project-handoff)"
     }
   ]

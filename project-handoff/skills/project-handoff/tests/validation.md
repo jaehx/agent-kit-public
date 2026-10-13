@@ -4,7 +4,7 @@
 
 - Codex `skill-creator`의 `quick_validate.py`: PASS. 공통 frontmatter는 name·description만 사용했다.
   MoAI 템플릿의 version은 현재 Codex 검증기가 지원하지 않아 본문과 테스트 정의에 기록했다.
-- `uv run ruff check my-skills/skills/project-handoff`: PASS.
+- `uv run ruff check project-handoff/skills/project-handoff`: PASS.
 - 상태 수집기 unittest: 3개 PASS. Git 없는 폴더·미커밋 저장소·한글/공백 경로·변경 지문·없는 파일·외부 경로를 확인했다.
   실제 저장소에 대한 수집기는 읽기 전용 JSON 출력이며 커밋·설정 변경을 수행하지 않는다.
 - 현재 자동매매 연구 저장소에서 본 스킬의 저장 절차를 적용해 인수인계·진입점·상태 기록을 작성했다.
