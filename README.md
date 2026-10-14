@@ -187,6 +187,16 @@ Codex에서는 `$project-handoff`로 부릅니다. Claude Code에서 저장한 �
 
 ---
 
+## 팁
+
+플러그인은 아니지만 Claude Code로 작업하면서 정리한 내용입니다.
+
+| 문서 | 내용 |
+|---|---|
+| [AI로 감각 있는 디자인 만들기](tips/design-references.md) | 제품 UI·랜딩 페이지 참고 사이트, 레퍼런스를 Claude에게 전달하는 법(토큰 고정, 금지 목록, 스크린샷 루프) |
+
+---
+
 ## 라이선스
 
 MIT. 단, `prompt-polish/`는 원본 저작자(Junhan2)의 MIT 라이선스를 따릅니다.
