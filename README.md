@@ -194,6 +194,7 @@ Codex에서는 `$project-handoff`로 부릅니다. Claude Code에서 저장한 �
 | 문서 | 내용 |
 |---|---|
 | [AI로 감각 있는 디자인 만들기](tips/design-references.md) | 제품 UI·랜딩 페이지 참고 사이트, 레퍼런스를 Claude에게 전달하는 법(토큰 고정, 금지 목록, 스크린샷 루프) |
+| [Claude가 읽기 쉬운 한국어로 답하게 하는 지침](tips/korean-writing.md) | CLAUDE.md에 붙여 넣는 한국어 문체 지침(답부터 쓰기, 번역투·한자어 바꾸기, 추측과 확인 구분) |
 
 ---
 
