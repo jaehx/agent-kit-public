@@ -37,7 +37,8 @@
   - 블록 P(코드 소유권 문장, Fable 5.2 가이드 "Say who owns the code"): 사용자가 구조 정리를 요청했을 때만 붙입니다. 상시 규칙에는 넣지 않습니다.
   - 승인이 필요한 단계는 범주가 아니라 정확한 행동으로 적고, «덜 생각해라» 류 문장은 쓰지 않습니다(Fable 5.2 가이드).
 - `skills/guide-audit`: Fable 5.2 가이드의 점검 항목 N18~N26(상시 위임 지시, 쌓인 금지 규칙, 범주로 쓴 승인 규칙, 숫자로 된 문체 한도 등). 메모리·노트 파일도 읽습니다.
-- `hooks/hooks.json`: 훅 제한 시간을 5초에서 15초로 올렸습니다. Windows(Git Bash)에서는 프로세스 생성이 느려서 세션 시작 훅이 실제 세션에서 4.6초 걸렸습니다(2.1.316에서 측정). 5초를 넘으면 규칙이 통째로 빠집니다.
+- `hooks/session-start.sh`는 bash 내장 기능만 씁니다(`grep`, `sed`, `tr`, `awk`, `cat`, 명령 치환 없음). Windows(Git Bash)에서는 프로세스나 하위 셸 하나를 띄우는 데 수십 밀리초가 들어서, 원본 방식으로는 실제 세션에서 4.6초가 걸렸습니다(2.1.316에서 측정, 제한 5초). 지금은 0.2~0.4초입니다. 도우미 함수는 결과를 출력하지 않고 `REPLY` 변수에 담습니다. `tests/hook-speed.sh`가 명령 치환이 다시 들어오는지와 실행 시간을 검사합니다. 바꾸기 전후의 출력은 설정·이벤트·모델 조합 60가지에서 바이트 단위로 같았습니다. macOS 기본 bash 3.2에서는 돌려 보지 못했습니다.
+- `hooks/hooks.json`: 훅 제한 시간은 여유를 두어 15초입니다(원본 5초).
 - `tests/guide-verbatim.sh`: 가이드 원문을 받아 `hooks/models/`의 모든 문단을 대조합니다. 가이드가 바뀌거나 근거 없는 문단이 들어오면 실패합니다. `curl`, `perl`, 네트워크가 필요합니다.
 - `tests/context-size.sh`: 모델별 규칙을 붙인 최악 경우(무인 + max effort)의 크기도 잽니다. 훅이 넣는 글은 10,000자를 넘으면 잘립니다.
 
@@ -55,7 +56,7 @@ ln -s <clone 경로>/prompt-polish/skills/guide-rewrite ~/.codex/skills/guide-re
 
 1. 그 모델의 프롬프팅 가이드를 읽고 `hooks/models/<이름>.md`를 만듭니다. 파일 이름은 가이드 주소의 끝부분과 같아야 합니다(`prompting-claude-<이름>`). 가이드의 예시 프롬프트를 그대로 쓰고, 공통 규칙(`hooks/always-on.md`)과 겹치는 문장은 뺍니다. 원문은 주소 끝에 `.md`를 붙여 직접 받습니다. 요약 도구가 돌려준 인용문을 옮기지 않습니다.
 2. `hooks/session-start.sh`의 `model_file`에 한 줄을 넣습니다. 기본 effort가 다르면 `model_traits`도, 별칭이 옮겨 갔으면 `model_from_settings`도 고칩니다.
-3. `tests/context-size.sh`의 모델 목록에 넣고 `bash tests/context-size.sh`와 `bash tests/guide-verbatim.sh`를 돌립니다.
+3. `tests/context-size.sh`의 모델 목록에 넣고 `bash tests/context-size.sh`, `bash tests/guide-verbatim.sh`, `bash tests/hook-speed.sh`를 돌립니다.
 4. 가이드가 «이전 모델용 지시를 지워라»고 하는 항목은 `skills/guide-audit/references/guide-sections.md`의 모델별 주의점에 넣습니다.
 
 ## 원본 업데이트 반영
