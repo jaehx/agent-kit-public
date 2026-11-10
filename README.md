@@ -34,8 +34,9 @@ Claude Code에서 실행합니다.
 
 ## prompt-polish
 
-[oh-my-fable](https://github.com/Junhan2/oh-my-fable) 2.2.0을 fork한 플러그인입니다.
+[oh-my-fable](https://github.com/Junhan2/oh-my-fable) 2.7.4를 fork한 플러그인입니다.
 원본과 다른 점은 [FORK.md](prompt-polish/FORK.md)에 있습니다.
+원본과 같이 켜면 공통 규칙이 두 번 들어가므로 하나만 설치하세요.
 
 > [prompt-polish/README.md](prompt-polish/README.md)는 원본 설명서를 그대로 둔 것입니다.
 > 작동 원리와 FAQ는 그 문서를 참고하되, 설치는 위의 `agent-kit` 명령으로 하세요.
@@ -47,7 +48,9 @@ Claude Code에서 실행합니다.
 
 - **공통 작업 규칙:** 자율 진행, 범위 제한, 시킨 범위 끝까지 하기, 부분 편집, 진행 보고, 서식, 도구 일괄 호출.
 - **모델별 규칙:** 세션 모델에 맞는 공식 가이드 규칙을 하나 더 넣습니다.
-  지원 모델은 Fable 5.1, Opus 5.5, Opus 5, Sonnet 5이고, 그 밖의 모델은 공통 규칙만 받습니다.
+  지원 모델은 Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5와 구형 Opus 5, Sonnet 5입니다.
+  Fable 5.1은 가이드의 처방이 모두 공통 규칙에 들어 있어서 따로 파일이 없습니다.
+  그 밖의 모델은 공통 규칙만 받고, 시작 줄에 `model rules: none for <모델>`이 표시됩니다.
 - **무인 실행 감지:** `claude -p`, Agent SDK 같은 무인 세션이면 "중간 보고로 멈추지 말라" 문단을 더합니다.
 - **서브에이전트:** 짧은 공통 규칙만 받습니다. 모델별 규칙은 넣지 않습니다.
 

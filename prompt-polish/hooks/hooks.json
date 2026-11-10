@@ -1,5 +1,5 @@
 {
-  "description": "prompt-polish (fork of oh-my-fable): base working rules at session start and for subagents, plus model-specific rules chosen by the session model (SessionStart) and swapped on /model changes (PostModelSwitch)",
+  "description": "prompt-polish (fork of oh-my-fable): injects the always-on working rules at session start and a short version into every subagent, adds the rules for the session model (hooks/models/), and after a model switch swaps the model rules and re-checks the effort rule (no CLAUDE.md edit needed)",
   "hooks": {
     "SessionStart": [
       {
@@ -35,5 +35,6 @@
         ]
       }
     ]
-  }
+  },
+  "modules": ["./card/register.tsx"]
 }

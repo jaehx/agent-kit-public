@@ -1,6 +1,10 @@
 ---
 name: guide-status
-description: Show what oh-my-fable is doing right now, in one table, without changing anything. Plugin version, where the rules live, this session's mode and why, effort and where it comes from, whether the rules file is current, and CLAUDE.md conflicts. Triggers: "/guide-status", "fable 상태", "규칙 적용됐어?", "지금 뭐가 켜져 있어", "is oh-my-fable active", "fable status", "which rules are loaded", "check the fable setup".
+description: 'Show what oh-my-fable is doing right now, in one table, without changing anything. Plugin version, where the rules live, this session''s mode and why, effort and where it comes from, whether the rules file is current, and CLAUDE.md conflicts. Triggers: "/guide-status", "fable 상태", "규칙 적용됐어?", "지금 뭐가 켜져 있어", "is oh-my-fable active", "fable status", "which rules are loaded", "check the fable setup".'
+allowed-tools:
+  - Bash(bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh" --status)
+  - Bash(claude --version)
+disallowed-tools: Edit, Write, NotebookEdit
 ---
 # guide-status · what is in effect (read-only)
 
@@ -8,9 +12,11 @@ This skill writes nothing. It answers "is it working, and how?" in one table so 
 inspect files or hook output by hand. Do not run `/guide-setup` from here; only point to it when a row says so.
 
 ## Step 1 · One batch of reads
-- `bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh" --status` with `CLAUDE_PROJECT_DIR` set to the current
-  project root (the hook computes everything: version, config dir, entrypoint, mode, delivery, rules file
-  version, effort and its source, subagent delivery, notices).
+- `bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh" --status <your model id>` (for example `--status claude-fable-5-2`;
+  you know your own model id), from the project root (the
+  hook reads the current folder as the project; written this way it runs without a permission prompt). It computes
+  everything: version, config dir, entrypoint, mode, delivery, rules file version, effort and its source, subagent
+  delivery, notices.
 - `claude --version`.
 - The frontmatter of `./.claude/agents/*.md` and `~/.claude/agents/*.md` (or under `$CLAUDE_CONFIG_DIR`), only
   whether each file sets `effort:`.
@@ -25,9 +31,10 @@ inspect files or hook output by hand. Do not run `/guide-setup` from here; only 
 | Rules | `rules_source` in plain words: "rules file + hook", "hook only", "CLAUDE.md section", "your own rules file (hook silent)", "disabled" | show `base_file` when there is one |
 | Subagents | the `subagents` line | |
 | Mode | `mode`, and when it says `(auto)` add the reason: entrypoint `sdk-*` → unattended, none → interactive | pinned modes: say "pinned in `oh-my-fable.json`" |
-| Effort | `effort` and `effort_source` (live = read from this session, exact; saved = `modelSettings` for this model; settings = top-level `effortLevel`; env = `CLAUDE_CODE_EFFORT_LEVEL`; model default = nothing saved) | Opus 5.5 defaults to `medium` and its guide says start there; raise per session with `/effort high` then `s`. Fable 5.1 and the other models default to `high` |
+| Effort | `effort` and `effort_source` (live = read from this session, exact; saved = `modelSettings` for this model; settings = top-level `effortLevel`; env = `CLAUDE_CODE_EFFORT_LEVEL`; model default = nothing saved, or a top-level `effortLevel` this model ignores; `X → Y by maxEffortLevel` = capped) | Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5 default to `medium` in Claude Code and ignore a top-level `effortLevel` in user settings; raise per session with `/effort high` then `s`. Fable 5.1 and the other models default to `high`. At `xhigh`/`max` the hook adds block N (stop once the checks pass, no self-started review rounds) |
+| Model rules | `model_rules`: the file from `hooks/models/` this session's model gets | `(none for <model>)` → say that this model has no rules file yet and only the base rules apply; subagents never get model rules |
 | Subagents' effort | note only: subagents inherit this session's effort unless their agent file sets `effort:` | show when an agent file from Step 1 has no `effort:`, with the file names |
-| Rules file | `rules_file_version` vs `plugin_rules_version` | differ → "run `/guide-setup refresh`" |
+| Rules file | `rules_file_version` vs `plugin_rules_version` | lower → "run `/guide-setup refresh`"; higher → "this session runs an older plugin; start a new session, after updating the plugin if needed (no refresh)" |
 | CLAUDE.md conflicts | count, then one line per conflict with the file and the suggested replacement | none → "none" |
 | Notice | the `notice` line when it is not `(none)` | |
 

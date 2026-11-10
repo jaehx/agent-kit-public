@@ -23,7 +23,7 @@ rules file) already carries them. No effort line.
 완료 기준: 증거(명령 출력, 파일:줄)가 붙은 진단 보고 1개.
 ```
 
-## 3. Research · "grok 4.6 요즘 가격 어때?" (time-sensitive, so block H is attached)
+## 3. Research · "grok 4.6 요즘 가격 어때?" (time-sensitive at `low` effort, so block H is attached; research, so `+ block J`)
 
 ```
 개선된 요청
@@ -31,7 +31,8 @@ rules file) already carries them. No effort line.
 맥락: 없음.
 범위: 사용자가 쓴 표기 "grok 4.6" 을 그대로 넣은 검색 1회 이상 포함. 기억으로 답하지 않는다.
 완료 기준: 가격 표 1개, 각 행에 출처 URL과 확인 날짜.
-+ block H
+When a query centers on a name you do not confidently recognize, or recognize from a fast-moving area like AI models and developer tools where the landscape shifts within months, the name itself is the thing to verify: search before answering, and include the name as the user wrote it in at least one query alongside any reformulations. This holds even when you have some background on it; partial background is exactly what makes an out-of-date answer sound authoritative, so familiarity is not a reason to skip the search.
++ block J
 ```
 
 ## 4. Change on GPT (Codex) · "결제 모듈 리팩터링하고 PR 올려줘" (O1 and O2 attached; no hook in Codex)
@@ -44,4 +45,15 @@ rules file) already carries them. No effort line.
 완료 기준: pnpm test:payments 통과, 변경 전후 동일 입력 결과 비교 1건, draft PR URL.
 + O1
 + O2
+```
+
+## 5. Change on Fable 5.2 · "주문 모듈 중복 좀 정리해줘" (the user asked to restructure their own code, so block P is attached)
+
+```
+개선된 요청
+목표: src/orders/ 안에서 같은 일을 하는 함수들을 하나로 합치고, 바깥에서 보이는 동작은 그대로 둔다.
+맥락: src/orders/create.ts, src/orders/update.ts 에 같은 검증 코드가 있음. 테스트는 pnpm test:orders.
+범위: src/orders/ 안의 구조 정리. 공개 API 시그니처와 응답 형식은 바꾸지 않는다. 배포는 하지 않는다.
+완료 기준: pnpm test:orders 통과, 합친 함수 목록과 동작이 바뀐 곳(있다면) 전부를 변경 요약에 적는다.
+This codebase is yours: what it's for and how it's built are your call, and you'll keep building on it.
 ```
