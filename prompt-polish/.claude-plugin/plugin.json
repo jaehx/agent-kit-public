@@ -1,6 +1,6 @@
 {
   "name": "prompt-polish",
-  "version": "2.7.4-my.2",
+  "version": "2.7.4-my.3",
   "description": "Personal fork of oh-my-fable 2.7.4 (Junhan2, MIT). Same always-on working rules and skills, plus a model-specific layer: the hook detects the session model (SessionStart model field, PostModelSwitch) and adds the matching rules from Anthropic's prompting guide for Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5, Opus 5, or Sonnet 5 (Fable 5.1 needs none: its guide's prompts are all in the base rules). tests/guide-verbatim.sh checks every model rule against the live guides. Skills are named guide-* (guide-rewrite, guide-audit, guide-setup, guide-status); guide-rewrite also follows OpenAI's GPT-6 and Codex guides when run in Codex.",
   "author": {
     "name": "jaehx"

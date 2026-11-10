@@ -71,10 +71,18 @@ model_file() {
     *haiku-5-5) echo haiku-5-5;;
   esac
 }
-# the model's rules with a one-line factual lead-in, for $MODEL; empty when model_file has no file for it
+# the model's rules with a one-line factual lead-in, for $RULES_MODEL; empty when model_file has no file for it.
+# The lead-in ties the rules to the model by name: rules injected earlier cannot be removed after a /model switch,
+# so each set says it holds only while that model is the one running. When the model was read from settings
+# (RULES_GUESSED), the lead-in says so and leaves the check to the model, which knows its own id.
 model_paragraph() {
-  local f; f="$(model_file "$MODEL")"; [ -n "$f" ] || return 0
-  printf '%s' "This session's model is $MODEL; the user's standing rules for that model follow.$P2$(grep -v '^<!--' "$HERE/models/$f.md")"
+  local f lead; f="$(model_file "$RULES_MODEL")"; [ -n "$f" ] || return 0
+  if [ "$RULES_GUESSED" = true ]; then
+    lead="This session did not report its model; the user's settings name $RULES_MODEL. The user's standing rules for $RULES_MODEL follow. They apply only if you are $RULES_MODEL; if you are a different model, ignore them."
+  else
+    lead="This session's model is $RULES_MODEL. The user's standing rules for that model follow; they apply only while you are $RULES_MODEL."
+  fi
+  printf '%s' "$lead$P2$(grep -v '^<!--' "$HERE/models/$f.md")"
 }
 
 # read a JSON string/bool value for key $2 from file $1, ignoring whitespace; empty if absent
@@ -193,6 +201,15 @@ if [ "$STATUS" = true ] || [ -z "$EVENT" ] || [ "$EVENT" = SessionStart ]; then
   fi
   resolve_effort
 fi
+# prompt-polish: the model the rules are chosen for. A headless start carries no model field, even with --model
+# (measured 2026-11-10 on 2.1.316 with a hook that logged its input), so there the settings' model stands in and
+# the lead-in tells the model to ignore the rules if it is a different one. Effort keeps upstream's stricter rule
+# above and is not guessed at startup: a wrong effort would add block N with nothing to catch it.
+RULES_MODEL="${MODEL:-}"; RULES_GUESSED=false
+[ -n "$MODEL_NOTE" ] && RULES_GUESSED=true
+if [ -z "$RULES_MODEL" ] && [ "$EVENT" = SessionStart ]; then
+  RULES_MODEL="$(model_from_settings)"; [ -n "$RULES_MODEL" ] && RULES_GUESSED=true
+fi
 EFFORT_SHOWN="${EFFORT:+ · effort $EFFORT ($SRC)}"; [ -n "$EFFORT" ] || EFFORT="(not known at session start; /effort shows it)"
 
 case "$STATE" in
@@ -206,9 +223,10 @@ STATUS_LINE="prompt-polish ${VERSION:-?} · mode $MODE$AUTO · rules: $HOW$EFFOR
 # model rules go out in the two states where the hook speaks (rules-file, hook-only); a known model with no file is named
 MODEL_RULES=""
 case "$STATE" in rules-file|hook-only)
-  if [ -n "${MODEL:-}" ]; then
-    MODEL_RULES="$(model_file "$MODEL")"
-    STATUS_LINE="$STATUS_LINE · model rules: ${MODEL_RULES:-none for $MODEL}"
+  if [ -n "$RULES_MODEL" ]; then
+    MODEL_RULES="$(model_file "$RULES_MODEL")"
+    STATUS_LINE="$STATUS_LINE · model rules: ${MODEL_RULES:-none for $RULES_MODEL}"
+    [ "$RULES_GUESSED" = true ] && STATUS_LINE="$STATUS_LINE (model from settings)"
   fi;;
 esac
 # a rules file newer than this plugin copy: the session started before an update, or this folder's plugin is older
@@ -228,7 +246,7 @@ if [ "$STATUS" = true ]; then
     *) SUB="base file reaches regular subagents; Explore and Plan get the short rules from the hook";;
   esac
   printf 'plugin_version: %s\nconfig_dir: %s\nproject_dir: %s\nentrypoint: %s\nenabled: %s\nmode: %s%s\ndelivery_config: %s\nrules_source: %s\nbase_file: %s\nrules_file_version: %s\nplugin_rules_version: %s\neffort: %s\neffort_source: %s\nmodel_rules: %s\nsubagents: %s\nnotice: %s\n' \
-    "${VERSION:-?}" "$CFG" "$PROJ" "${CLAUDE_CODE_ENTRYPOINT:-(none, interactive)}" "$ENABLED" "$MODE" "$AUTO" "$DELIVERY" "$STATE" "${BASE:-(none)}" "${RULES_V:-(n/a)}" "${PLUGIN_V:-?}" "$EFFORT" "${SRC:-(n/a)}" "${MODEL_RULES:-(none${MODEL:+ for $MODEL})}" "$SUB" "${NOTICE:-(none)}"
+    "${VERSION:-?}" "$CFG" "$PROJ" "${CLAUDE_CODE_ENTRYPOINT:-(none, interactive)}" "$ENABLED" "$MODE" "$AUTO" "$DELIVERY" "$STATE" "${BASE:-(none)}" "${RULES_V:-(n/a)}" "${PLUGIN_V:-?}" "$EFFORT" "${SRC:-(n/a)}" "${MODEL_RULES:-(none${RULES_MODEL:+ for $RULES_MODEL})}" "$SUB" "${NOTICE:-(none)}"
   exit 0
 fi
 
@@ -255,6 +273,7 @@ if [ "$EVENT" = PostModelSwitch ]; then
   case "$STATE" in rules-file|hook-only) ;; *) exit 0;; esac
   [ "$SOURCE" = resume ] && exit 0
   MODEL="$(canon "$(jget to_model)")"; resolve_effort
+  RULES_MODEL="$MODEL"; RULES_GUESSED=false
   SWITCH=""
   if [ "$(model_file "$MODEL")" != "$(model_file "$(canon "$(jget from_model)")")" ]; then
     SWITCH="The session's model changed to ${MODEL:-an unknown model}. Model-specific rules given earlier in this conversation for another model no longer apply."
