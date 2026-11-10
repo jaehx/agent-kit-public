@@ -1,6 +1,6 @@
 # prompt-polish
 
-[oh-my-fable](https://github.com/Junhan2/oh-my-fable) 2.7.4(Junhan2, MIT)를 개인용으로 fork한 플러그인입니다. 원본 LICENSE와 README는 그대로 두었습니다(README 안의 명령 이름만 바꿨습니다).
+[oh-my-fable](https://github.com/Junhan2/oh-my-fable) 2.7.4(Junhan2, MIT)를 개인용으로 fork한 플러그인입니다. 원본 LICENSE는 그대로 두었습니다. README는 이 fork에 맞게 새로 썼고, 작동 원리와 FAQ는 원본 README를 가리킵니다.
 
 원본과 같이 켜지 마세요. 두 플러그인이 같은 공통 규칙을 넣으므로 규칙이 두 번 들어갑니다. 원본을 쓰고 있었다면 먼저 `claude plugin uninstall oh-my-fable@oh-my-fable`을 실행하세요.
 
@@ -61,4 +61,4 @@ ln -s <clone 경로>/prompt-polish/skills/guide-rewrite ~/.codex/skills/guide-re
 
 ## 원본 업데이트 반영
 
-원본이 새 버전을 내면 `~/.claude/plugins/marketplaces/oh-my-fable`(없으면 원본 저장소 clone)과 이 폴더를 diff 해서 옮깁니다. 2.7.4로 올릴 때는 원본을 통째로 복사한 뒤 fork 변경분을 다시 넣었습니다. 이 fork가 바꾼 파일은 위 목록과 `.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/card/parse.ts`(블록 P 인식 한 줄), `skills/guide-rewrite/SKILL.md`, `skills/guide-rewrite/references/{examples,prompt-blocks}.md`, `skills/guide-status/SKILL.md`, 그리고 이름 변경이 닿은 파일들입니다. 원본 파일을 옮길 때는 `fable-*` 이름을 `guide-*`로, `/fable`을 `/guide-rewrite`로 바꿔서 옮깁니다. 원본의 `.claude-plugin/marketplace.json`, `_config.yml`, 사이트 인증용 html은 가져오지 않습니다.
+원본이 새 버전을 내면 `~/.claude/plugins/marketplaces/oh-my-fable`(없으면 원본 저장소 clone)과 이 폴더를 diff 해서 옮깁니다. 2.7.4로 올릴 때는 원본을 통째로 복사한 뒤 fork 변경분을 다시 넣었습니다. 이 fork가 바꾼 파일은 위 목록과 `.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/card/parse.ts`(블록 P 인식 한 줄), `skills/guide-rewrite/SKILL.md`, `skills/guide-rewrite/references/{examples,prompt-blocks}.md`, `skills/guide-status/SKILL.md`, 그리고 이름 변경이 닿은 파일들입니다. 원본 파일을 옮길 때는 `fable-*` 이름을 `guide-*`로, `/fable`을 `/guide-rewrite`로 바꿔서 옮깁니다. 원본의 `README*.md`, `.claude-plugin/marketplace.json`, `_config.yml`, 사이트 인증용 html은 가져오지 않습니다.

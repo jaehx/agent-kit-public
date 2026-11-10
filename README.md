@@ -38,9 +38,8 @@ Claude Code에서 실행합니다.
 원본과 다른 점은 [FORK.md](prompt-polish/FORK.md)에 있습니다.
 원본과 같이 켜면 공통 규칙이 두 번 들어가므로 하나만 설치하세요.
 
-> [prompt-polish/README.md](prompt-polish/README.md)는 원본 설명서를 그대로 둔 것입니다.
-> 작동 원리와 FAQ는 그 문서를 참고하되, 설치는 위의 `agent-kit` 명령으로 하세요.
-> 원본 설치 명령(`Junhan2/oh-my-fable`)으로 설치하면 이 fork가 아닌 원본이 설치됩니다.
+> 작동 원리와 FAQ는 [원본 README](https://github.com/Junhan2/oh-my-fable#readme)에 있습니다.
+> 설치는 위의 `agent-kit` 명령으로 하세요. 원본 설치 명령으로 설치하면 이 fork가 아닌 원본이 설치됩니다.
 
 ### 설치만 하면 자동으로 되는 것
 
